@@ -14,6 +14,7 @@ public class Main extends Application {
 			scene.getStylesheets().add(getClass().getResource("application.css").toExternalForm());
 			primaryStage.setScene(scene);
 			// 设置 title
+			//设置 title
 			primaryStage.setTitle("NetAssist");
 			primaryStage.show();
 		} catch(Exception e) {
