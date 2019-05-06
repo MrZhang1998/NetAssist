@@ -26,8 +26,7 @@ import util.Utility;
 
 public class NetAssistController {
 	
-	// 本界面的所有配置都会存在这里 true false 类型会被保存成字符串形式
-	private Map<String, String> config = new HashMap<String, String>(); 
+	
 	
     @FXML // ResourceBundle that was given to the FXMLLoader
     private ResourceBundle resources;
@@ -125,9 +124,7 @@ public class NetAssistController {
     	String internet_type = combobox_type_of_internet.getValue();
     	String local_address = combobox_local_ip_address.getValue();
     	String port  = textfield_port.getText();
-    	config.put(ConfigName.INTERNET_TYPE, internet_type);
-    	config.put(ConfigName.LOCAL_IP, local_address);
-    	config.put(ConfigName.LOCAL_PORT, port);
+    	
     	System.out.println("类型为"+internet_type);
     	System.out.println("ip地址为"+local_address+":"+port);
     	System.out.println("开始连接");
@@ -182,41 +179,35 @@ public class NetAssistController {
     //两个radiobutton的事件函数 接收设置
     public void onAsciiClick(ActionEvent event) {
     	radiobutton_hex.setSelected(false);
-    	config.put(ConfigName.RECEIVE_IS_ASCII, "true");
-    	config.put(ConfigName.RECEIVE_IS_HEX, "false");
+    	
     }
     
     public void onHexClick(ActionEvent event) {
     	radiobutton_ascii.setSelected(false);
-    	config.put(ConfigName.RECEIVE_IS_ASCII, "false");
-    	config.put(ConfigName.RECEIVE_IS_HEX, "true");
+    
     }
     //两个radiobutton的事件函数 发送设置
     public void onSendAscii(ActionEvent event) {
     	radiobutton_send_hex.setSelected(false);
-    	config.put(ConfigName.SEND_ASCII, "true");
-    	config.put(ConfigName.SEND_HEX, "false");
+    	
     }
     public void onSendHex(ActionEvent event) {
     	radiobutton_send_ascii.setSelected(false);
-    	config.put(ConfigName.SEND_ASCII, "false");
-    	config.put(ConfigName.SEND_HEX, "true");
+    	
     }
     
     @FXML
     private CheckBox checkbox_log_mode;
     public void changeLogMode(ActionEvent event) {
     	boolean selected = checkbox_log_mode.isSelected();
-    	config.put(ConfigName.RECEIVE_LOG_MODE, String.valueOf(selected));
-    	System.out.println(ConfigName.RECEIVE_LOG_MODE+":"+selected);
+    
     }
     
     @FXML
     private CheckBox checkbox_auto_enter;
     public void changeAutoEnter(ActionEvent event) {
     	boolean selected = checkbox_auto_enter.isSelected();
-    	config.put(ConfigName.RECEIVE_AUTO_ENTER, String.valueOf(selected));
-    	System.out.println(ConfigName.RECEIVE_AUTO_ENTER+":"+selected);
+    	
     }
     
     @FXML
@@ -226,16 +217,14 @@ public class NetAssistController {
     	
     	//
     	
-    	config.put(ConfigName.RECEIVE_FILE_NAME,"your file name");
-    	System.out.println(ConfigName.RECEIVE_FILE_NAME+":"+config.get(ConfigName.RECEIVE_FILE_NAME));
+    	
     }
     
     @FXML
     private CheckBox checkbox_pause_disply;
     public void puseDisplay(ActionEvent event) {
     	boolean selected = checkbox_pause_disply.isSelected();
-    	config.put(ConfigName.PAUSE_RECEIVE, String.valueOf(selected));
-    	System.out.println(ConfigName.PAUSE_RECEIVE+":"+selected);
+    	
     	textarea_log.setDisable(selected);
     }
     
@@ -244,23 +233,21 @@ public class NetAssistController {
     private CheckBox checkbox_auto_parse;
     public void onChangeAtuoParse(ActionEvent event) {
     	boolean selected = checkbox_auto_parse.isSelected();
-    	config.put(ConfigName.SEND_AUTO_PARSE, String.valueOf(selected));
-    	System.out.println(ConfigName.SEND_AUTO_PARSE+":"+selected);
+    	
+    	
     }
     @FXML
     private CheckBox checkbox_send_file_name;
     public void onGetFileNameSend(ActionEvent event) {
     	// 此处写获得文件路径 
     	
-    	config.put(ConfigName.SEND_FILE_NAME, "your file name");
-    	System.out.println(ConfigName.SEND_FILE_NAME+":"+config.get(ConfigName.SEND_FILE_NAME));
+    	
     }
     @FXML
     private CheckBox checkbox_send_auto_enter;
     public void onChangeAutoEnterSend(ActionEvent event) {
     	boolean selected = checkbox_send_auto_enter.isSelected();
-    	config.put(ConfigName.SEND_AT_AUTO_ENTER, String.valueOf(selected));
-    	System.out.println(ConfigName.SEND_AT_AUTO_ENTER+":"+selected);
+    	
     }
     
     @FXML
@@ -269,8 +256,7 @@ public class NetAssistController {
     private TextField textfield_cycle_t;
     public void onChangeToCycle(ActionEvent event) {
     	boolean selected = checkbox_is_cycle.isSelected();
-    	config.put(ConfigName.SEND_IS_CYCLE, String.valueOf(selected));
-    	System.out.println(ConfigName.SEND_IS_CYCLE+":"+selected);
+    
     	
     }
     
