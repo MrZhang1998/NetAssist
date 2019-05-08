@@ -1,150 +1,167 @@
 package core.tcp;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.net.Inet4Address;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.nio.ByteBuffer;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
-public class TCPServer {
-    private static final int PORT = 20000;
+import controller.ConfigName;
+import core.encoding.EncodingChange;
+import javafx.scene.control.TextArea;
+import util.UiUpdaer;
+import util.Utility;
 
-    public static void main(String[] args) throws IOException {
-        ServerSocket server = createServerSocket();
+public class TCPServer
+{
+	public static ServerSocket serverSocket = null;
+	
+	// 需要更新的UI控件 即 日志显示区
+	public static TextArea textArea;
+	
+	public static Map<String, String> config = null;
+	
+	// 所有被接受的socket
+	public static Set<Socket> acceptedSockets = new HashSet<Socket>();
+	
+	public static void startListen(String ip, String port,Map<String, String>config,TextArea textArea)
+	{
+		try
+		{
+			TCPServer.textArea = textArea;
+			TCPServer.config = config;
+			createServerSocket(ip, port);
+			initServerSocket();
+			System.out.println("服务器准备就绪～");
+			System.out.println("服务器信息：" + serverSocket.getInetAddress() + " P:" + serverSocket.getLocalPort());
 
-        initServerSocket(server);
+			// 等待客户端连接
+			while (true)
+			{
+				// 得到客户端
+				Socket client = serverSocket.accept();
+				acceptedSockets.add(client);
+				// 客户端构建异步线程
+				ClientHandler clientHandler = new ClientHandler(client,textArea,config);
+				// 启动线程
+				clientHandler.start();
+			}
+			
+		} catch (Exception e)
+		{
+			Utility.alertBox(e.getMessage());
+			System.out.println(e.getMessage());
+			System.out.println("服务器关闭");
+			// TODO: handle exception
+		}
+		
 
-        // 绑定到本地端口上
-        server.bind(new InetSocketAddress(Inet4Address.getLocalHost(), PORT), 50);
+	}
+
+	private static void createServerSocket(String ip, String port) throws IOException
+	{
+		
+		InetSocketAddress address = new InetSocketAddress(ip,Integer.valueOf(port));
+		serverSocket = new ServerSocket();
+		serverSocket.bind(address);
+	}
+
+	private static void initServerSocket() throws IOException
+	{
+		// 是否复用未完全关闭的地址端口
+		serverSocket.setReuseAddress(true);
+		// 等效Socket#setReceiveBufferSize
+		serverSocket.setReceiveBufferSize(64 * 1024 * 1024);
+
+		// 设置serverSocket#accept超时时间
+		// serverSocket.setSoTimeout(20000);
+
+		// 设置性能参数：短链接，延迟，带宽的相对重要性
+		serverSocket.setPerformancePreferences(1, 1, 1);
+	}
+
+	/**
+	 * 客户端消息处理
+	 */
+	private static class ClientHandler extends Thread
+	{
+		private Socket socket;
+		private TextArea textArea;
+		private Map<String, String> config;
+	
+		public ClientHandler(Socket socket, TextArea textArea, Map<String, String> config)
+		{
+			super();
+			this.socket = socket;
+			this.textArea = textArea;
+			this.config = config;
+		}
 
 
-        System.out.println("服务器准备就绪～");
-        System.out.println("服务器信息：" + server.getInetAddress() + " P:" + server.getLocalPort());
-
-
-        // 等待客户端连接
-        while (true) {
-            // 得到客户端
-            Socket client = server.accept();
-            // 客户端构建异步线程
-            ClientHandler clientHandler = new ClientHandler(client);
-            // 启动线程
-            clientHandler.start();
-        }
-
-    }
-
-    private static ServerSocket createServerSocket() throws IOException {
-        // 创建基础的ServerSocket
-        ServerSocket serverSocket = new ServerSocket();
-
-        // 绑定到本地端口20000上，并且设置当前可允许等待链接的队列为50个
-        //serverSocket = new ServerSocket(PORT);
-
-        // 等效于上面的方案，队列设置为50个
-        //serverSocket = new ServerSocket(PORT, 50);
-
-        // 与上面等同
-        // serverSocket = new ServerSocket(PORT, 50, Inet4Address.getLocalHost());
-
-        return serverSocket;
-    }
-
-    private static void initServerSocket(ServerSocket serverSocket) throws IOException {
-        // 是否复用未完全关闭的地址端口
-        serverSocket.setReuseAddress(true);
-
-        // 等效Socket#setReceiveBufferSize
-        serverSocket.setReceiveBufferSize(64 * 1024 * 1024);
-
-        // 设置serverSocket#accept超时时间
-        //serverSocket.setSoTimeout(20000);
-
-        // 设置性能参数：短链接，延迟，带宽的相对重要性
-        serverSocket.setPerformancePreferences(1, 1, 1);
-    }
-
-    /**
-     * 客户端消息处理
-     */
-    private static class ClientHandler extends Thread {
-        private Socket socket;
-
-        ClientHandler(Socket socket) {
-            this.socket = socket;
-        }
-
-        @Override
-        public void run() {
-            super.run();
-            System.out.println("新客户端连接：" + socket.getInetAddress() +
-                    " P:" + socket.getPort());
-
-            try {
-                // 得到套接字流
-                OutputStream outputStream = socket.getOutputStream();
-                InputStream inputStream = socket.getInputStream();
-
-                byte[] buffer = new byte[256];
-                int readCount = inputStream.read(buffer);
-                ByteBuffer byteBuffer = ByteBuffer.wrap(buffer, 0, readCount);
-
-                // byte
-                byte be = byteBuffer.get();
-
-                // char
-                char c = byteBuffer.getChar();
-
-                // int
-                int i = byteBuffer.getInt();
-
-                // bool
-                boolean b = byteBuffer.get() == 1;
-
-                // Long
-                long l = byteBuffer.getLong();
-
-                // float
-                float f = byteBuffer.getFloat();
-
-                // double
-                double d = byteBuffer.getDouble();
-
-                // String
-                int pos = byteBuffer.position();
-                String str = new String(buffer, pos, readCount - pos - 1);
-
-                System.out.println("收到数量：" + readCount + " 数据："
-                        + be + "\n"
-                        + c + "\n"
-                        + i + "\n"
-                        + b + "\n"
-                        + l + "\n"
-                        + f + "\n"
-                        + d + "\n"
-                        + str + "\n");
-
-                outputStream.write(buffer, 0, readCount);
-                outputStream.close();
-                inputStream.close();
-
-            } catch (Exception e) {
-                System.out.println("连接异常断开");
-            } finally {
-                // 连接关闭
-                try {
-                    socket.close();
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-            }
-
-            System.out.println("客户端已退出：" + socket.getInetAddress() +
-                    " P:" + socket.getPort());
-
-        }
-    }
+		@Override
+		public void run()
+		{
+			super.run();
+			System.out.println("新客户端连接：" + socket.getInetAddress() + " P:" + socket.getPort());
+			try
+			{
+				BufferedReader reader = Utility.ins2BufferedReader(socket.getInputStream());
+				//OutputStream os = socket.getOutputStream();
+				while(true) {
+					
+					StringBuffer buffer = new StringBuffer();
+					System.out.println("reading now");
+					String line = reader.readLine();
+					// socket连接时 会阻塞 直到读出一行值 客户端断开时，此socket不会阻塞，读取值为 null
+					if(line == null)
+					{
+						throw new Exception("客户端连接断开");
+					}
+					buffer.append(line);
+					if(Utility.isEmpty(buffer.toString()))
+						continue;
+					String log_content = Utility.processStringTcp(buffer, config, socket);
+					String filename = config.get(ConfigName.RECEIVE_FILE_NAME);
+					if(Utility.isEmpty(filename)) {
+						// 存到界面
+						boolean puse = Utility.string2Bollean(config.get(ConfigName.PAUSE_RECEIVE));
+						if (!puse)
+						{
+							System.out.println("update ui");
+							UiUpdaer uiUpdaer = new UiUpdaer(textArea);
+							uiUpdaer.update(log_content);
+						}
+					}else {
+						// 存到文件
+						Utility.saveToFile(filename, log_content);
+					}
+					
+					// 调用一个方法 让socket断开连接时正常退出线程
+					socket.getInputStream();
+					// 减少CPU资源占用
+					Thread.sleep(100);
+				}
+			} catch (Exception e)
+			{
+				// TODO: handle exception
+				System.out.println("客户端已退出：" + socket.getInetAddress() + " P:" + socket.getPort());
+				//连接中断
+				try
+				{
+					this.socket.close();
+				} catch (IOException e1)
+				{
+					// TODO Auto-generated catch block
+					e1.printStackTrace();
+				}
+				acceptedSockets.remove(this.socket);
+			}
+			
+		}
+	}
 }

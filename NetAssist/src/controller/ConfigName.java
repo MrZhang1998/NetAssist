@@ -18,5 +18,6 @@ public class ConfigName
 	public static  final String SEND_FILE_NAME = "SEND_FILE_NAME";
 	public static  final String SEND_IS_CYCLE = "SEND_IS_CYCLE";
 	public static  final String SEND_CYCLE_T = "SEND_CYCLE_T";
+	public static  final String SEND_IP = "SEND_IP";
 	
 }
