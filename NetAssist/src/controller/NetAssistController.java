@@ -13,6 +13,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
+import java.text.SimpleDateFormat;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.ResourceBundle;
@@ -139,6 +140,7 @@ public class NetAssistController
 		textarea_send_message.setText("test message");
 		config.put(ConfigName.RECEIVE_IS_ASCII, "true");
 		config.put(ConfigName.SEND_ASCII, "true");
+		textfield_cycle_t.setText("1000");
 	}
 
 	// 连接成功标注，连接成功后，将此变量 值为 true
@@ -311,6 +313,13 @@ public class NetAssistController
 				udp_socket = null;
 				break;
 			}
+			// 正在循环发送 ，突然断开，则关闭发送线程。
+			if (isSending)
+			{
+				button_send.setText("循环发送");
+				isSending = false;
+			}
+			
 			
 		} catch (Exception e)
 		{
@@ -331,6 +340,11 @@ public class NetAssistController
 		System.out.println("将要发送" + message);
 		System.out.println("开始发送");
 		boolean isCycle = Utility.string2Bollean(config.get(ConfigName.SEND_IS_CYCLE));
+		if(tcp_client_socket == null && tcp_server_socket == null && udp_socket == null) {
+			// 三个都未连接 此时不能发送
+			Utility.alertBox("你还没有连接呢");
+			return;
+		}
 		if (isCycle)
 		{
 			// 循环发送
