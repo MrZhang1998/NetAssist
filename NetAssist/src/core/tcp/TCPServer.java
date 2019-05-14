@@ -20,53 +20,56 @@ import util.Utility;
 public class TCPServer
 {
 	public static ServerSocket serverSocket = null;
-	
+
 	// 需要更新的UI控件 即 日志显示区
 	public static TextArea textArea;
-	
+
 	public static Map<String, String> config = null;
-	
+
 	// 所有被接受的socket
 	public static Set<Socket> acceptedSockets = new HashSet<Socket>();
-	
-	public static void startListen(String ip, String port,Map<String, String>config,TextArea textArea)
+
+	public static void createTcpServer(String ip, String port, Map<String, String> config, TextArea textArea)
+			throws Exception
 	{
-		try
-		{
-			TCPServer.textArea = textArea;
-			TCPServer.config = config;
-			createServerSocket(ip, port);
-			initServerSocket();
-			System.out.println("服务器准备就绪～");
-			System.out.println("服务器信息：" + serverSocket.getInetAddress() + " P:" + serverSocket.getLocalPort());
 
-			// 等待客户端连接
-			while (true)
+		TCPServer.textArea = textArea;
+		TCPServer.config = config;
+		createServerSocket(ip, port);
+		initServerSocket();
+		System.out.println("服务器准备就绪～");
+		System.out.println("服务器信息：" + serverSocket.getInetAddress() + " P:" + serverSocket.getLocalPort());
+		// 新线程开启监听。
+		startListen();
+
+	}
+	public static void startListen()
+	{
+		Thread thread = new Thread(() -> {
+			while (!serverSocket.isClosed())
 			{
-				// 得到客户端
-				Socket client = serverSocket.accept();
-				acceptedSockets.add(client);
-				// 客户端构建异步线程
-				ClientHandler clientHandler = new ClientHandler(client,textArea,config);
-				// 启动线程
-				clientHandler.start();
+				try
+				{
+					Socket client = serverSocket.accept();
+					acceptedSockets.add(client);
+					// 客户端构建异步线程
+					ClientHandler clientHandler = new ClientHandler(client, textArea, config);
+					// 启动线程
+					clientHandler.start();
+				} catch (Exception e)
+				{
+					Utility.alertBox(e.getMessage());
+				}
 			}
-			
-		} catch (Exception e)
-		{
-			Utility.alertBox(e.getMessage());
-			System.out.println(e.getMessage());
-			System.out.println("服务器关闭");
-			// TODO: handle exception
-		}
-		
+		});
 
+		thread.start();
 	}
 
 	private static void createServerSocket(String ip, String port) throws IOException
 	{
-		
-		InetSocketAddress address = new InetSocketAddress(ip,Integer.valueOf(port));
+
+		InetSocketAddress address = new InetSocketAddress(ip, Integer.valueOf(port));
 		serverSocket = new ServerSocket();
 		serverSocket.bind(address);
 	}
@@ -93,7 +96,7 @@ public class TCPServer
 		private Socket socket;
 		private TextArea textArea;
 		private Map<String, String> config;
-	
+
 		public ClientHandler(Socket socket, TextArea textArea, Map<String, String> config)
 		{
 			super();
@@ -101,7 +104,6 @@ public class TCPServer
 			this.textArea = textArea;
 			this.config = config;
 		}
-
 
 		@Override
 		public void run()
@@ -111,23 +113,25 @@ public class TCPServer
 			try
 			{
 				BufferedReader reader = Utility.ins2BufferedReader(socket.getInputStream());
-				//OutputStream os = socket.getOutputStream();
-				while(true) {
-					
+				// OutputStream os = socket.getOutputStream();
+				while (true)
+				{
+
 					StringBuffer buffer = new StringBuffer();
 					System.out.println("reading now");
 					String line = reader.readLine();
 					// socket连接时 会阻塞 直到读出一行值 客户端断开时，此socket不会阻塞，读取值为 null
-					if(line == null)
+					if (line == null)
 					{
 						throw new Exception("客户端连接断开");
 					}
 					buffer.append(line);
-					if(Utility.isEmpty(buffer.toString()))
+					if (Utility.isEmpty(buffer.toString()))
 						continue;
 					String log_content = Utility.processStringTcp(buffer, config, socket);
 					String filename = config.get(ConfigName.RECEIVE_FILE_NAME);
-					if(Utility.isEmpty(filename)) {
+					if (Utility.isEmpty(filename))
+					{
 						// 存到界面
 						boolean puse = Utility.string2Bollean(config.get(ConfigName.PAUSE_RECEIVE));
 						if (!puse)
@@ -136,11 +140,12 @@ public class TCPServer
 							UiUpdaer uiUpdaer = new UiUpdaer(textArea);
 							uiUpdaer.update(log_content);
 						}
-					}else {
+					} else
+					{
 						// 存到文件
 						Utility.saveToFile(filename, log_content);
 					}
-					
+
 					// 调用一个方法 让socket断开连接时正常退出线程
 					socket.getInputStream();
 					// 减少CPU资源占用
@@ -150,7 +155,7 @@ public class TCPServer
 			{
 				// TODO: handle exception
 				System.out.println("客户端已退出：" + socket.getInetAddress() + " P:" + socket.getPort());
-				//连接中断
+				// 连接中断
 				try
 				{
 					this.socket.close();
@@ -161,7 +166,7 @@ public class TCPServer
 				}
 				acceptedSockets.remove(this.socket);
 			}
-			
+
 		}
 	}
 }

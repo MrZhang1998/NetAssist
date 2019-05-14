@@ -21,6 +21,8 @@ import java.util.Date;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import controller.ConfigName;
 import core.encoding.EncodingChange;
@@ -32,12 +34,18 @@ import javafx.scene.control.Alert.AlertType;
 public class Utility
 {
 
+	public static boolean checkIp(String ipAddress) {  
+        String ip = "([1-9]|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])(\\.(\\d|[1-9]\\d|1\\d{2}|2[0-4]\\d|25[0-5])){3}";   
+        Pattern pattern = Pattern.compile(ip);  
+        Matcher matcher = pattern.matcher(ipAddress);  
+        return matcher.matches();  
+    }
+	
 	public static void sendMessageBySocket(String message, Socket socket, Map<String, String> config,
 			TextArea textarea_log)
 	{
 		try
 		{
-
 			PrintWriter writer = os2pPrintWriter(socket.getOutputStream());
 			writer.println(message);
 			writer.flush();
@@ -46,6 +54,8 @@ public class Utility
 		} catch (Exception e)
 		{
 			// TODO: handle exception
+			e.printStackTrace();
+			Utility.alertBox(e.getMessage());
 		}
 	}
 
@@ -62,7 +72,7 @@ public class Utility
 		if (log_mode && f && !pause)
 		{
 			// 日志模式 并且不存到文件 并且不是暂停显示 则显示发送消息
-			String time_str = "[" + Utility.getCurTime() + "] " + "send to:" + ip + "\r\n";
+			String time_str = "[" + Utility.getCurTime() + "] " + "send to:" + ip +"send bytes:"+message.getBytes().length+ "\r\n";
 			message = time_str + message;
 			UiUpdaer uiUpdaer = new UiUpdaer(textarea_log);
 			uiUpdaer.update(message);
@@ -78,7 +88,7 @@ public class Utility
 			Alert alert = new Alert(AlertType.WARNING);
 			alert.setTitle("警告");
 			alert.setHeaderText("");
-			alert.setContentText(alllertMessage);
+			alert.setContentText("发生错误，提示信息为->"+alllertMessage);
 			alert.showAndWait();
 		});
 
@@ -94,7 +104,8 @@ public class Utility
 		String time_str = "";
 		if (log_mode)
 		{
-			time_str = "[" + Utility.getCurTime() + "] " + "receive from:" + socket.getRemoteSocketAddress() + "\r\n";
+			int bytes = buffer.toString().getBytes().length;
+			time_str = "[" + Utility.getCurTime() + "] " + "receive from:" + socket.getRemoteSocketAddress() +"receive bytes:"+bytes+ "\r\n";
 		}
 		boolean is_hex = Utility.string2Bollean(config.get(ConfigName.RECEIVE_IS_HEX));
 		boolean is_ascii = Utility.string2Bollean(config.get(ConfigName.RECEIVE_IS_ASCII));
@@ -125,8 +136,9 @@ public class Utility
 		String time_str = "";
 		if (log_mode)
 		{
+			int bytes = buffer.toString().getBytes().length;
 			time_str = "[" + Utility.getCurTime() + "] " + "receive from:" + packet.getAddress() + ":"
-					+ packet.getPort() + "\r\n";
+					+ packet.getPort() +"receive bytes:"+bytes+ "\r\n";
 		}
 		boolean is_hex = Utility.string2Bollean(config.get(ConfigName.RECEIVE_IS_HEX));
 		boolean is_ascii = Utility.string2Bollean(config.get(ConfigName.RECEIVE_IS_ASCII));
@@ -149,10 +161,11 @@ public class Utility
 
 	public static String readFromIns(InputStream ins)
 	{
+		ByteArrayOutputStream baos = null;
 		try
 		{
 			byte[] buffer = new byte[1024];
-			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			baos = new ByteArrayOutputStream();
 			int len = -1;
 			while ((len = ins.read(buffer)) != -1)
 			{
@@ -163,6 +176,17 @@ public class Utility
 		} catch (Exception e)
 		{
 			// TODO: handle exception
+			e.printStackTrace();
+		}finally {
+			try
+			{
+				ins.close();
+				baos.close();
+			} catch (Exception e2)
+			{
+				// TODO: handle exception
+				e2.printStackTrace();
+			}
 		}
 		return "";
 	}

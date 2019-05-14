@@ -175,10 +175,8 @@ public class NetAssistController
 		// 上面写连接的逻辑
 		// 模拟连接成功
 
-		// 连接成功 并且 连接选项不为 TCP Server(服务器不需要目标ip)
-		// 并且 Tcpclient 也不需要 目标ip
-		if (isConnectSuccess && !combobox_type_of_internet.getValue().equals("TCP Server")
-				&& !combobox_type_of_internet.getValue().equals("TCP Client"))
+		// 连接成功 并且 连接选项为udp
+		if (isConnectSuccess && combobox_type_of_internet.getValue().equals("UDP"))
 		{
 			hbox_des_host.setDisable(false);
 		}
@@ -204,90 +202,53 @@ public class NetAssistController
 
 	private void openTcpServer()
 	{
-		System.out.println("open tcp server socket");
-		Thread thread = new Thread(() -> {
-
-			TCPServer.startListen(config.get(ConfigName.LOCAL_IP), config.get(ConfigName.LOCAL_PORT), config,
-					textarea_log);
-		});
-		thread.start();
-		// 等0.2秒 确保拿到正确的引用
 		try
 		{
-			Thread.sleep(200);
-		} catch (InterruptedException e)
+			System.out.println("open tcp server socket");
+			TCPServer.createTcpServer(config.get(ConfigName.LOCAL_IP), config.get(ConfigName.LOCAL_PORT), config,
+					textarea_log);
+			
+			tcp_server_socket = TCPServer.serverSocket;
+			acceptedSockets = TCPServer.acceptedSockets;
+			isConnectSuccess = true;
+		} catch (Exception e)
 		{
-			// TODO Auto-generated catch block
-			e.printStackTrace();
+			Utility.alertBox("服务器开启失败"+e.getMessage());
 		}
 		
-		tcp_server_socket = TCPServer.serverSocket;
-		acceptedSockets = TCPServer.acceptedSockets;
-		if(tcp_server_socket==null || tcp_server_socket.isClosed()) {
-			Utility.alertBox("服务器开启失败");
-		}else {
-			isConnectSuccess = true;
-		}
 	}
 	//TODO
 	private void openTcpClient()
 	{
-		System.out.println("open tcp client socket");
-		Thread thread = new Thread(
-				()->{
-					TCPClient.createSocket(config.get(ConfigName.LOCAL_IP), config.get(ConfigName.LOCAL_PORT), config,
-							textarea_log);
-				}
-				);
-		thread.start();
 		try
 		{
-			Thread.sleep(200);
+			System.out.println("open tcp client socket");
+			TCPClient.createSocket(config.get(ConfigName.LOCAL_IP), config.get(ConfigName.LOCAL_PORT), config,
+					textarea_log);
+			tcp_client_socket = TCPClient.socket;
+			isConnectSuccess = true;
 		} catch (Exception e)
 		{
 			// TODO: handle exception
+			Utility.alertBox("连接失败："+e.getMessage());
 		}
-		tcp_client_socket = TCPClient.socket;
-		if (tcp_client_socket!=null)
-		{
-			isConnectSuccess = true;
-		}else {
-			Utility.alertBox("未连接成功，请重新连接");
-		}
+		
 		
 	}
 	//TODO
 	private void openUdp()
 	{
-		System.out.println("open udp socket");
-		Thread thread = new Thread(
-				()->{
-					try
-					{
-						UdpSocket.createUdpSocket(config.get(ConfigName.LOCAL_IP), config.get(ConfigName.LOCAL_PORT), textarea_log, config);
-						
-					} catch (SocketException e)
-					{
-						// TODO Auto-generated catch block
-						e.printStackTrace();
-					}
-				}
-				);
-		thread.start();
 		try
 		{
-			Thread.sleep(400);
+			System.out.println("open udp socket");
+			UdpSocket.createUdpSocket(config.get(ConfigName.LOCAL_IP), config.get(ConfigName.LOCAL_PORT), textarea_log, config);
+			udp_socket = UdpSocket.socket;
+			isConnectSuccess = true;
 		} catch (Exception e)
 		{
 			// TODO: handle exception
+			Utility.alertBox("打开udp失败："+e.getMessage());
 		}
-		udp_socket = UdpSocket.socket;
-		if(udp_socket == null) {
-			Utility.alertBox("打开udp失败");
-			return;
-		}
-		isConnectSuccess = true;
-		
 	}
 
 	private void disconnectSocket()
@@ -324,10 +285,9 @@ public class NetAssistController
 		} catch (Exception e)
 		{
 			// TODO Auto-generated catch block
-			Utility.alertBox("断开发生错误，请重新连接");
+			Utility.alertBox(e.getMessage());
 			e.printStackTrace();
 		}
-
 	}
 
 	boolean isSending = false;

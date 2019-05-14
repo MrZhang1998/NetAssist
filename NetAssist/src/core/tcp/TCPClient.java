@@ -19,49 +19,57 @@ import javafx.scene.control.TextArea;
 import util.UiUpdaer;
 import util.Utility;
 
-public class TCPClient {
-    
+public class TCPClient
+{
+
 	public static Socket socket = null;
 	private static Map<String, String> config = null;
-	
-	private static TextArea textArea = null;
-    
-    public static void createSocket(String ip, String port,Map<String, String>config,TextArea textArea){
-    	try
-		{
-    		TCPClient.textArea = textArea;
-        	TCPClient.config = config;
-        	socket = new Socket(ip,Integer.valueOf(port));
-         
-            //initSocket(socket);
-            BufferedReader reader = Utility.ins2BufferedReader(socket.getInputStream());
-            while(true) {
-            	StringBuffer buffer = new StringBuffer();
-				buffer.append(reader.readLine());
-				if(Utility.isEmpty(buffer.toString()))
-					continue;
-				String log_content = Utility.processStringTcp(buffer, config, socket);
-				String filename = config.get(ConfigName.RECEIVE_FILE_NAME);
-				if(Utility.isEmpty(filename)) {
-					boolean puse = Utility.string2Bollean(config.get(ConfigName.PAUSE_RECEIVE));
-					if (!puse)
-					{
-						System.out.println("update ui");
-						UiUpdaer uiUpdaer = new UiUpdaer(textArea);
-						uiUpdaer.update(log_content);
-					}
-				}else {
-					// 存到文件
-					Utility.saveToFile(filename, log_content);
-				}
-            }
-		} catch (Exception e)
-		{
-			e.printStackTrace();
-			// TODO: handle exception
-			System.out.println("连接断开");
-		}
 
-    }
+	private static TextArea textArea = null;
+
+	public static void createSocket(String ip, String port, Map<String, String> config, TextArea textArea)
+			throws Exception
+	{
+
+		TCPClient.textArea = textArea;
+		TCPClient.config = config;
+		socket = new Socket(ip, Integer.valueOf(port));
+		Thread thread = new Thread(() -> {
+			try
+			{
+				BufferedReader reader = Utility.ins2BufferedReader(socket.getInputStream());
+				while (!socket.isClosed())
+				{
+					StringBuffer buffer = new StringBuffer();
+					buffer.append(reader.readLine());
+					if (Utility.isEmpty(buffer.toString()))
+						continue;
+					String log_content = Utility.processStringTcp(buffer, config, socket);
+					String filename = config.get(ConfigName.RECEIVE_FILE_NAME);
+					if (Utility.isEmpty(filename))
+					{
+						boolean puse = Utility.string2Bollean(config.get(ConfigName.PAUSE_RECEIVE));
+						if (!puse)
+						{
+							System.out.println("update ui");
+							UiUpdaer uiUpdaer = new UiUpdaer(textArea);
+							uiUpdaer.update(log_content);
+						}
+					} else
+					{
+						// 存到文件
+						Utility.saveToFile(filename, log_content);
+					}
+				}
+			} catch (Exception e)
+			{
+				// TODO: handle exception
+				Utility.alertBox("发生错误 "+e.getMessage());
+			}
+
+		});
+		thread.start();
+
+	}
 
 }
