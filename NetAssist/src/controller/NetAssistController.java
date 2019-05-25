@@ -37,11 +37,14 @@ import javafx.scene.control.TextField;
 import javafx.scene.layout.HBox;
 import javafx.scene.media.VideoTrack;
 import javafx.stage.FileChooser;
+import util.UiUpdaer;
 import util.Utility;
 
 public class NetAssistController
 {
 
+	
+	public static long send_bytes = 0;
 	// 主要socket
 	private Socket tcp_client_socket = null;
 	// 服务器socket
@@ -119,6 +122,12 @@ public class NetAssistController
 
 	@FXML
 	private Button button_send;
+	
+	@FXML
+	private Label lable_send_bytes;
+	
+	@FXML
+	private Label lable_connect_nums;
 
 	@FXML // This method is called by the FXMLLoader when initialization is
 			// complete
@@ -206,7 +215,7 @@ public class NetAssistController
 		{
 			System.out.println("open tcp server socket");
 			TCPServer.createTcpServer(config.get(ConfigName.LOCAL_IP), config.get(ConfigName.LOCAL_PORT), config,
-					textarea_log);
+					textarea_log,lable_connect_nums);
 			
 			tcp_server_socket = TCPServer.serverSocket;
 			acceptedSockets = TCPServer.acceptedSockets;
@@ -280,8 +289,9 @@ public class NetAssistController
 				button_send.setText("循环发送");
 				isSending = false;
 			}
-			
-			
+			send_bytes = 0L;
+			UiUpdaer uiUpdaer = new UiUpdaer(lable_send_bytes);
+			uiUpdaer.resetAndUpdate("已发送："+send_bytes+"个字节");
 		} catch (Exception e)
 		{
 			// TODO Auto-generated catch block
@@ -351,9 +361,9 @@ public class NetAssistController
 			// 单次发送
 			sendMessage(message);
 		}
-		// 这里写要发送的逻辑
+		
 	}
-
+	// 发送消息
 	private void sendMessage(String message)
 	{
 		if (Utility.isEmpty(message))
@@ -372,8 +382,11 @@ public class NetAssistController
 			udpSend(message);
 			break;
 		}
+		send_bytes+=message.getBytes().length;
+		UiUpdaer uiUpdaer = new UiUpdaer(lable_send_bytes);
+		uiUpdaer.resetAndUpdate("已发送："+send_bytes+"个字节");
 	}
-
+	// tcpserver 发送消息
 	private void tcpServerSend(String message)
 	{
 		if(acceptedSockets==null || acceptedSockets.size() == 0)
@@ -435,7 +448,7 @@ public class NetAssistController
 		config.put(ConfigName.RECEIVE_IS_ASCII, "true");
 		config.put(ConfigName.RECEIVE_IS_HEX, "false");
 	}
-
+	// hex button 回调
 	public void onHexClick(ActionEvent event)
 	{
 		radiobutton_ascii.setSelected(false);
@@ -489,7 +502,7 @@ public class NetAssistController
 		{
 			// 这里写打开对话框 获得文件路径
 			FileChooser fileChooser = new FileChooser();
-			fileChooser.setTitle("Open Resource File");
+			fileChooser.setTitle("选择储存接收内容的文件");
 			File file = fileChooser.showOpenDialog(null);
 			//
 			textarea_log.setText("接收转向至文件\r\n" + file.getAbsolutePath());
@@ -538,7 +551,8 @@ public class NetAssistController
 		{
 			// 此处写获得文件路径
 			FileChooser fileChooser = new FileChooser();
-			fileChooser.setTitle("Open Resource File");
+			
+			fileChooser.setTitle("打开发送文件");
 			File file = fileChooser.showOpenDialog(null);
 			String file_content = Utility.readFromIns(new FileInputStream(file));
 			textarea_send_message.setText(file_content);
@@ -565,7 +579,7 @@ public class NetAssistController
 	private CheckBox checkbox_is_cycle;
 	@FXML
 	private TextField textfield_cycle_t;
-
+	// 循环发送回调
 	public void onChangeToCycle(ActionEvent event)
 	{
 		boolean selected = checkbox_is_cycle.isSelected();
@@ -577,7 +591,7 @@ public class NetAssistController
 			button_send.setText("发送");
 
 	}
-
+	// 网络类型选择框回调
 	public void onInternetTypeChange(ActionEvent event)
 	{
 		String value = combobox_type_of_internet.getValue();
@@ -598,6 +612,11 @@ public class NetAssistController
 			combobox_local_ip_address.setItems(options);
 			combobox_local_ip_address.getSelectionModel().select(0);
 			textarea_send_message.setText("test message");
+		}
+		if(value.equals("TCP Server")) {
+			lable_connect_nums.setDisable(false);
+		}else {
+			lable_connect_nums.setDisable(true);
 		}
 	}
 

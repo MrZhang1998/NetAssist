@@ -16,6 +16,7 @@ import java.util.Scanner;
 
 import controller.ConfigName;
 import javafx.scene.control.TextArea;
+import util.ThreadPoll;
 import util.UiUpdaer;
 import util.Utility;
 
@@ -34,7 +35,7 @@ public class TCPClient
 		TCPClient.textArea = textArea;
 		TCPClient.config = config;
 		socket = new Socket(ip, Integer.valueOf(port));
-		Thread thread = new Thread(() -> {
+		ThreadPoll.execute(() -> {
 			try
 			{
 				BufferedReader reader = Utility.ins2BufferedReader(socket.getInputStream());
@@ -68,7 +69,6 @@ public class TCPClient
 			}
 
 		});
-		thread.start();
 
 	}
 

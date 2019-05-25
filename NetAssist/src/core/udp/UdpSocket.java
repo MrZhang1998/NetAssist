@@ -7,6 +7,7 @@ import java.net.SocketException;
 import java.util.Map;
 import controller.ConfigName;
 import javafx.scene.control.TextArea;
+import util.ThreadPoll;
 import util.UiUpdaer;
 import util.Utility;
 
@@ -27,7 +28,7 @@ public class UdpSocket
 		InetSocketAddress address = new InetSocketAddress(ip, Integer.valueOf(port));
 		socket = new DatagramSocket(address);
 
-		Thread thread = new Thread(() -> {
+		ThreadPoll.execute(() -> {
 			byte[] data = new byte[1024];
 			DatagramPacket packet = new DatagramPacket(data, data.length);
 
@@ -66,7 +67,6 @@ public class UdpSocket
 			}
 
 		});
-		thread.start();
 
 	}
 
@@ -83,7 +83,7 @@ public class UdpSocket
 			int index = string.indexOf(':');
 			String ip = string.substring(0, index);
 			String port = string.substring(index + 1, string.length());
-			if (Utility.checkIp(ip))
+			if (!Utility.checkIp(ip))
 				throw new Exception("ip不合法");
 			System.out.println("udp将要发送给" + ip + ":" + port);
 			InetSocketAddress des = new InetSocketAddress(ip, Integer.valueOf(port));

@@ -2,18 +2,16 @@ package core.tcp;
 
 import java.io.BufferedReader;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
-
 import controller.ConfigName;
-import core.encoding.EncodingChange;
+import javafx.scene.control.Label;
 import javafx.scene.control.TextArea;
+import util.ThreadPoll;
 import util.UiUpdaer;
 import util.Utility;
 
@@ -22,19 +20,21 @@ public class TCPServer
 	public static ServerSocket serverSocket = null;
 
 	// 需要更新的UI控件 即 日志显示区
-	public static TextArea textArea;
+	private static TextArea textArea;
 
-	public static Map<String, String> config = null;
+	private static Map<String, String> config = null;
 
+	private static Label label;
 	// 所有被接受的socket
 	public static Set<Socket> acceptedSockets = new HashSet<Socket>();
 
-	public static void createTcpServer(String ip, String port, Map<String, String> config, TextArea textArea)
+	public static void createTcpServer(String ip, String port, Map<String, String> config, TextArea textArea,Label label)
 			throws Exception
 	{
 
 		TCPServer.textArea = textArea;
 		TCPServer.config = config;
+		TCPServer.label = label;
 		createServerSocket(ip, port);
 		initServerSocket();
 		System.out.println("服务器准备就绪～");
@@ -45,17 +45,19 @@ public class TCPServer
 	}
 	public static void startListen()
 	{
-		Thread thread = new Thread(() -> {
+		ThreadPoll.execute(() -> {
 			while (!serverSocket.isClosed())
 			{
 				try
 				{
 					Socket client = serverSocket.accept();
 					acceptedSockets.add(client);
+					// 更新连接数
+					updateLable(acceptedSockets.size());
 					// 客户端构建异步线程
 					ClientHandler clientHandler = new ClientHandler(client, textArea, config);
 					// 启动线程
-					clientHandler.start();
+					ThreadPoll.execute(clientHandler);
 				} catch (Exception e)
 				{
 					Utility.alertBox(e.getMessage());
@@ -63,9 +65,13 @@ public class TCPServer
 			}
 		});
 
-		thread.start();
 	}
-
+	
+	private static void updateLable(int connect_nums) {
+		String content=" 已连接"+connect_nums+"个";
+		UiUpdaer uiUpdaer = new UiUpdaer(label);
+		uiUpdaer.resetAndUpdate(content);
+	}
 	private static void createServerSocket(String ip, String port) throws IOException
 	{
 
@@ -91,7 +97,7 @@ public class TCPServer
 	/**
 	 * 客户端消息处理
 	 */
-	private static class ClientHandler extends Thread
+	private static class ClientHandler implements Runnable
 	{
 		private Socket socket;
 		private TextArea textArea;
@@ -108,7 +114,7 @@ public class TCPServer
 		@Override
 		public void run()
 		{
-			super.run();
+			
 			System.out.println("新客户端连接：" + socket.getInetAddress() + " P:" + socket.getPort());
 			try
 			{
@@ -165,6 +171,7 @@ public class TCPServer
 					e1.printStackTrace();
 				}
 				acceptedSockets.remove(this.socket);
+				updateLable(acceptedSockets.size());
 			}
 
 		}
